@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>거금도 해안도로 투어 - 관리자 검수 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0b1924;
+      --bg-card: #132737;
+      --bg-panel: #183348;
+      --border-color: rgba(255, 255, 255, 0.12);
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation */
+    header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: #071f2d; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { background: transparent; border-color: var(--border-color); color: var(--text-main); }
+    .btn-outline:hover { background: rgba(255, 255, 255, 0.05); }
+
+    /* Main Layout */
+    .dashboard-container {
+      display: flex;
+      flex: 1;
+      padding: 24px;
+      gap: 24px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Left: List & Filter Panel */
+    .list-panel {
+      flex: 3;
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .filter-bar {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: rgba(0,0,0,0.15);
+    }
+    .select-control, .input-search {
+      padding: 9px 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .input-search { flex: 1; min-width: 180px; }
+
+    /* Data Table */
+    .table-responsive {
+      flex: 1;
+      overflow-y: auto;
+      max-height: calc(100vh - 230px);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+    th {
+      background: var(--bg-panel);
+      padding: 14px 16px;
+      color: var(--text-muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: middle;
+    }
+    tr.row-item {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    tr.row-item:hover { background: rgba(56, 189, 248, 0.08); }
+    tr.row-item.active { background: rgba(56, 189, 248, 0.15); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .badge-approved { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .badge-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge-hidden { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .thumb-preview {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #000;
+    }
+
+    /* Right: Detail Inspection Panel */
+    .detail-panel {
+      flex: 2;
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: calc(100vh - 140px);
+      overflow-y: auto;
+    }
+    .detail-header {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+    .detail-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .detail-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .photo-display {
+      width: 100%;
+      height: 240px;
+      border-radius: 12px;
+      background: #08131d;
+      border: 1px dashed var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: zoom-in;
+    }
+    .photo-display img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .text-card {
+      background: var(--bg-panel);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .text-card-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .text-card-content {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+    }
+    .action-group {
+      display: flex;
+      gap: 10px;
+      margin-top: auto;
+    }
+    .btn-approve { flex: 1; background: var(--success); color: #fff; }
+    .btn-hide { flex: 1; background: var(--danger); color: #fff; }
+
+    /* Modal for Image Zoom */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.open { display: flex; }
+    .modal-img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <div class="brand-title">🛡️ 거금도 해안도로 투어 관리자</div>
+      <div class="brand-subtitle">10개 거점 참여자 사진 & 서술형 응답 검수 시스템</div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" id="btnExportCsv">📥 엑셀(CSV) 다운로드</button>
+      <button class="btn btn-primary" id="btnRefresh">🔄 실시간 새로고침</button>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <!-- Left Table Panel -->
+    <div class="list-panel">
+      <div class="filter-bar">
+        <select class="select-control" id="filterSpot">
+          <option value="all">📍 전체 거점 (10개)</option>
+          <option value="rest">① 거금휴게소</option>
+          <option value="kimil">② 김일기념관</option>
+          <option value="yeonso">③ 연소해수욕장</option>
+          <option value="ikgeum">④ 익금해수욕장 (소원)</option>
+          <option value="geumjang">⑤ 금장해수욕장 (포토)</option>
+          <option value="poem">⑥ 금의시비공원</option>
+          <option value="peak">⑦ 적대봉</option>
+          <option value="forest">⑧ 거금생태숲</option>
+          <option value="camp">⑨ 청석오토캠핑장 (플로깅)</option>
+          <option value="wish">⑩ 소원동산 (소원+포토)</option>
+        </select>
+        <select class="select-control" id="filterStatus">
+          <option value="all">모든 검수 상태</option>
+          <option value="PENDING">⏳ 대기 (PENDING)</option>
+          <option value="APPROVED">✅ 승인 (APPROVED)</option>
+          <option value="HIDDEN">🚫 숨김 (HIDDEN)</option>
+        </select>
+        <input type="text" class="input-search" id="searchInput" placeholder="작성자명 또는 메시지 검색...">
+      </div>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>거점명</th>
+              <th>사진</th>
+              <th>작성자</th>
+              <th>서술형/소원 내용</th>
+              <th>상태</th>
+              <th>제출일시</th>
+            </tr>
+          </thead>
+          <tbody id="submissionTableBody">
+            <!-- Dynamic Rows Generated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Detail Panel -->
+    <div class="detail-panel" id="detailPanel">
+      <div class="detail-header">
+        <div class="detail-title" id="detailTitle">항목을 선택하세요</div>
+        <div class="detail-meta" id="detailMeta">-</div>
+      </div>
+
+      <div class="text-card-label">📸 제출 사진 미리보기 (클릭 시 확대)</div>
+      <div class="photo-display" id="detailPhotoBox">
+        <span style="color: var(--text-muted); font-size: 0.85rem;">선택된 사진이 없습니다.</span>
+      </div>
+
+      <div class="text-card">
+        <div class="text-card-label">✏️ 서술형 응답 / 소원 메시지</div>
+        <div class="text-card-content" id="detailText">-</div>
+      </div>
+
+      <div class="action-group">
+        <button class="btn btn-approve" id="btnApproveAction">✅ 정상 승인 (공개)</button>
+        <button class="btn btn-hide" id="btnHideAction">🚫 불량 숨김 (블라인드)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zoom Modal -->
+  <div class="modal" id="imageModal">
+    <img src="" class="modal-img" id="modalImg" alt="확대 이미지">
+  </div>
+
+  <script>
+    // 10개 거점 메타 매핑
+    const spotNames = {
+      rest: "① 거금휴게소",
+      kimil: "② 김일기념관",
+      yeonso: "③ 연소해수욕장",
+      ikgeum: "④ 익금해수욕장",
+      geumjang: "⑤ 금장해수욕장",
+      poem: "⑥ 금의시비공원",
+      peak: "⑦ 적대봉",
+      forest: "⑧ 거금생태숲",
+      camp: "⑨ 청석오토캠핑장",
+      wish: "⑩ 금산면 소원동산"
+    };
+
+    // 실제 제출 데이터 (Firestore 실시간 연동, 아래 module 스크립트에서 채워짐)
+    let submissions = [];
+
+    let currentSelectedId = null;
+
+    // Firestore Timestamp / 문자열 어떤 형태로 와도 안전하게 표시용 문자열로 변환
+    function formatCreatedAt(created_at) {
+      if (!created_at) return '-';
+      if (typeof created_at === 'string') return created_at;
+      if (created_at.toDate) {
+        return created_at.toDate().toLocaleString('ko-KR');
+      }
+      return String(created_at);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('submissionTableBody');
+      const spotFilter = document.getElementById('filterSpot').value;
+      const statusFilter = document.getElementById('filterStatus').value;
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      tbody.innerHTML = '';
+
+      const filtered = submissions.filter(item => {
+        if (spotFilter !== 'all' && item.spot_key !== spotFilter) return false;
+        if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+        if (query) {
+          const matchUser = item.user_name.toLowerCase().includes(query);
+          const matchText = (item.descriptive_text || '').toLowerCase().includes(query);
+          if (!matchUser && !matchText) return false;
+        }
+        return true;
+      });
+
+      filtered.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = `row-item ${item.id === currentSelectedId ? 'active' : ''}`;
+        
+        let statusBadge = `<span class="badge badge-pending">대기</span>`;
+        if (item.status === 'APPROVED') statusBadge = `<span class="badge badge-approved">승인됨</span>`;
+        if (item.status === 'HIDDEN') statusBadge = `<span class="badge badge-hidden">숨김</span>`;
+
+        const thumb = item.image_url 
+          ? `<img src="${item.image_url}" class="thumb-preview" alt="썸네일">` 
+          : `<span style="color:var(--text-muted);font-size:0.75rem;">-</span>`;
+
+        tr.innerHTML = `
+          <td>${item.id}</td>
+          <td><strong>${spotNames[item.spot_key] || item.spot_key}</strong></td>
+          <td>${thumb}</td>
+          <td>${item.user_name}</td>
+          <td style="max-width:240px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            ${item.descriptive_text || '<span style="color:var(--text-muted);">(텍스트 없음)</span>'}
+          </td>
+          <td>${statusBadge}</td>
+          <td style="font-size:0.78rem; color:var(--text-muted);">${formatCreatedAt(item.created_at)}</td>
+        `;
+
+        tr.addEventListener('click', () => selectItem(item.id));
+        tbody.appendChild(tr);
+      });
+
+      if (filtered.length > 0 && !currentSelectedId) {
+        selectItem(filtered[0].id);
+      }
+    }
+
+    function selectItem(id) {
+      currentSelectedId = id;
+      const item = submissions.find(s => s.id === id);
+      if (!item) return;
+
+      document.getElementById('detailTitle').textContent = `${spotNames[item.spot_key] || item.spot_key} - ${item.user_name}`;
+      document.getElementById('detailMeta').textContent = `제출 번호 #${item.id} · 등록 일시: ${formatCreatedAt(item.created_at)}`;
+      document.getElementById('detailText').textContent = item.descriptive_text || '(작성된 서술형 내용이 없습니다.)';
+
+      const photoBox = document.getElementById('detailPhotoBox');
+      if (item.image_url) {
+        photoBox.innerHTML = `<img src="${item.image_url}" id="detailImg" alt="제출 사진">`;
+        document.getElementById('detailImg').addEventListener('click', () => {
+          document.getElementById('modalImg').src = item.image_url;
+          document.getElementById('imageModal').classList.add('open');
+        });
+      } else {
+        photoBox.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">첨부된 사진이 없습니다.</span>`;
+      }
+
+      renderTable();
+    }
+
+    // 상태 변경 액션 (승인 / 숨김) - Firestore 문서에 실제 반영
+    async function updateStatus(newStatus) {
+      if (!currentSelectedId) return;
+      const target = submissions.find(s => s.id === currentSelectedId);
+      if (!target) return;
+
+      if (!window.updateSubmissionStatus) {
+        alert('서버 연결 준비 중입니다. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      try {
+        await window.updateSubmissionStatus(target.id, newStatus);
+        // Firestore 실시간 리스너가 자동으로 화면을 갱신하지만,
+        // 응답 지연 없이 즉시 반영되도록 로컬 상태도 함께 갱신
+        target.status = newStatus;
+        alert(`[${newStatus === 'APPROVED' ? '승인' : '숨김'}] 처리되었습니다.`);
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        alert('처리 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      }
+    }
+
+    document.getElementById('btnApproveAction').addEventListener('click', () => updateStatus('APPROVED'));
+    document.getElementById('btnHideAction').addEventListener('click', () => updateStatus('HIDDEN'));
+
+    // 필터 이벤트 리스너
+    document.getElementById('filterSpot').addEventListener('change', renderTable);
+    document.getElementById('filterStatus').addEventListener('change', renderTable);
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      alert('최신 응답 데이터를 불러왔습니다.');
+      renderTable();
+    });
+
+    // 이미지 확대 모달 닫기
+    document.getElementById('imageModal').addEventListener('click', () => {
+      document.getElementById('imageModal').classList.remove('open');
+    });
+
+    // CSV 엑셀 내보내기
+    document.getElementById('btnExportCsv').addEventListener('click', () => {
+      let csvContent = "\uFEFFid,spot,user_name,text,image_url,status,created_at\n";
+      submissions.forEach(r => {
+        const textClean = (r.descriptive_text || '').replace(/"/g, '""');
+        csvContent += `${r.id},"${spotNames[r.spot_key]}","${r.user_name}","${textClean}","${r.image_url || ''}","${r.status}","${formatCreatedAt(r.created_at)}"\n`;
+      });
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `거금도_투어_응답검수_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    // 초기 렌더링
+    renderTable();
+  </script>
+
+  <!-- ============================================================
+       Firebase(Firestore) 실시간 연동
+       - 앱에서 제출된 데이터를 실시간으로 불러와 submissions 배열을 채움
+       - 승인/숨김 처리 시 실제 문서 상태를 업데이트
+       ============================================================ -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import {
+      getFirestore, collection, query, orderBy, onSnapshot,
+      doc, updateDoc
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBiTfRWHNtohM0bk9bnO6ZxKgYIU7DWu10",
+      authDomain: "jeolidoviewtour2026.firebaseapp.com",
+      projectId: "jeolidoviewtour2026",
+      storageBucket: "jeolidoviewtour2026.firebasestorage.app",
+      messagingSenderId: "272034686866",
+      appId: "1:272034686866:web:6ca80ed4004757ef01034b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const submissionsQuery = query(collection(db, 'submissions'), orderBy('created_at', 'desc'));
+
+    onSnapshot(submissionsQuery, (snapshot) => {
+      const rows = [];
+      snapshot.forEach((docSnap) => {
+        rows.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      // 전역 submissions 배열을 실제 데이터로 교체 후 화면 갱신
+      submissions = rows;
+      if (typeof renderTable === 'function') renderTable();
+    }, (err) => {
+      console.error('[Firestore 구독 오류]', err);
+    });
+
+    window.updateSubmissionStatus = async function (id, newStatus) {
+      await updateDoc(doc(db, 'submissions', id), { status: newStatus });
+    };
+  </script>
+</body>
+</html>
